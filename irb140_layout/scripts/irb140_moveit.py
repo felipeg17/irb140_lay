@@ -12,6 +12,8 @@ import moveit_msgs.msg
 from moveit_commander.conversions import pose_to_list
 import geometry_msgs.msg
 from std_msgs.msg import Float64
+from gazebo_ros_link_attacher.srv import Attach, AttachRequest, AttachResponse
+
 
 # Transf  and RTB
 from tf.transformations import *
@@ -40,6 +42,7 @@ move_group.set_planner_id("PRMstarkConfigDefault") # Planner PRM, try RRT e.g.
 move_group.set_planning_time(5)
 move_group.set_max_velocity_scaling_factor(0.5)
 move_group.set_max_acceleration_scaling_factor(0.5)
+
 #############################################################################
 
 
@@ -83,19 +86,27 @@ if __name__ == "__main__":
     is_gripper_topic = False
     for topic in rospy.get_published_topics():
         if '/gripper_controller/command' in topic: is_gripper_topic = True
-    
-    # if is_gripper_topic:
-    print('gripper detected')
+    if is_gripper_topic:
+        print('gripper detected')
     gripper_pub = rospy.Publisher('/gripper_controller/command', Float64, queue_size=5)
-    gripper_pub.publish(5)
-    print('gripper_open')
-    rospy.sleep(1)
+        # gripper_pub.publish(5)
+        # print('gripper_open')
+        # rospy.sleep(1)
+
+    # gazebo_attacher
+    rospy.wait_for_service('/link_attacher_node/attach')
+    rospy.wait_for_service('/link_attacher_node/detach')
+    attach_srv = rospy.ServiceProxy('/link_attacher_node/attach', Attach)
+    detach_srv = rospy.ServiceProxy('/link_attacher_node/detach', Attach)
+    # attach_srv.wait_for_service()
 
     joint_motion(np.array([0, 0, 0, 0, np.pi/6, 0]))
     # time.sleep(0.1)
     # joint_motion(np.array([0.694, 0.289, -0.469, 0, 1.75, 0.695]))
     # [0.5067793457656542, 0.19498238658623812, -0.3528302904797309, 0.0004234713342130547, 1.729444616118922, 0.5077151482134368]
     joint_motion(np.array([0.50678, 0.195, -0.35283, 0, 1.72944, 0.507715]))
+    time.sleep(0.1)
+    gripper_pub.publish(1)
     time.sleep(0.1)
     # Shows the joints values and the pose
     print(move_group.get_current_joint_values())
@@ -114,9 +125,9 @@ if __name__ == "__main__":
     corner_four = numpy.concatenate([np.array([0.6, 0, 0.37]),qua_goal])
     # ws_motion(pregrasp_pose)
     # print(move_group.get_current_joint_values())
-    R2 = R.dot(trotz(-8.87,'deg'))
+    R2 = R.dot(trotz(2,'deg'))
     qua_grasp = quaternion_from_matrix(R2)
-    ws_motion(numpy.concatenate([np.array([0.45, 0.08, 0.42]),qua_grasp]))
+    ws_motion(numpy.concatenate([np.array([0.452, 0.18, 0.42]),qua_grasp]))
     gripper_pub.publish(5)
     rospy.sleep(0.5)
     waypoints = []
@@ -126,11 +137,27 @@ if __name__ == "__main__":
     (plan, fraction) = move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
     print(fraction)
     move_group.execute(plan, wait=True)
-    # ws_motion(numpy.concatenate([np.array([0.58, 0.216, 0.37]),qua_grasp]))
     rospy.sleep(0.5)
+    # res = attach_srv("irb_140","link_6","banana","link")
+    res = attach_srv("irb_140","link_6","foam","foam::link_00")
+    # res = attach_srv("irb_140","link_6","tuna","link_00")    
+    rospy.sleep(0.5)
+    gripper_pub.publish(-1)
+    rospy.sleep(0.5)
+    waypoints = []
+    wpose = move_group.get_current_pose().pose
+    wpose.position.z += 0.1  
+    waypoints.append(copy.deepcopy(wpose))
+    (plan, fraction) = move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+    print(fraction)
+    move_group.execute(plan, wait=True)
     gripper_pub.publish(-.5)
-    # rospy.sleep(0.5)
-    # gripper_pub.publish(-2)
+    rospy.sleep(0.5)
+    input()
+    # res = detach_srv("irb_140","link_6","banana","link")    
+    res = detach_srv("irb_140","link_6","foam","foam::link_00")    
+    
+    
     # Shows the joints values and the pose
     # print(move_group.get_current_joint_values())
     # print(move_group.get_current_pose().pose)
