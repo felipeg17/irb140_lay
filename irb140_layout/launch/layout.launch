@@ -57,6 +57,6 @@
 	<node name="rviz" 
 		pkg="rviz" 
 		type="rviz" 
-		args="-d $(find irb140_sim)/config/rviz/rviz_gazebo_config.rviz" />
+		args="-d $(find irb140_layout)/config/rviz/rviz_gazebo_config.rviz" />
 
 </launch>

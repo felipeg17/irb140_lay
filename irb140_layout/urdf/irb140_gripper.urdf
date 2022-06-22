@@ -7,7 +7,7 @@
 		<visual>
 			<origin rpy="0 0 0" xyz="0 0 0" />
 			<geometry>
-				<mesh filename="package://irb140_sim/meshes/irb140/visual/base_link.stl" scale="0.01 0.01 0.01" />
+				<mesh filename="package://irb140_layout/meshes/irb140/visual/base_link.stl" scale="0.01 0.01 0.01" />
 			</geometry>
 			<material name="abb_orange">
 				<color rgba="1 0.43 0 1" />
